@@ -1,0 +1,86 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #f9f9f9;
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  width: 360px;
+  margin: 40px auto;
+  background: #fff;
+  padding: 20px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+}
+
+h1, h2 {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.field {
+  margin-bottom: 12px;
+}
+
+.field label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.field input {
+  width: 100%;
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+button {
+  width: 100%;
+  padding: 8px;
+  background: #28a745;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #218838;
+}
+
+#matches-list {
+  list-style: none;
+  padding: 0;
+}
+
+#matches-list li {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+#balances-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+#balances-table th,
+#balances-table td {
+  padding: 6px;
+  border: 1px solid #ddd;
+  text-align: right;
+}
+
+#balances-table th:first-child,
+#balances-table td:first-child {
+  text-align: left;
+}
+
+/* Make the tab-close button black and larger */
+.delete-match.btn-close {
+  /* override Bootstrap’s SVG color */
+  --bs-btn-close-color: #000;
+  /* increase size */
+  --bs-btn-close-width: 1.2rem;
+  --bs-btn-close-height: 1.2rem;
+  /* ensure full opacity */
+  opacity: 1;
+}
