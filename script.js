@@ -1,93 +1,98 @@
-// script.js
+// 1. Welcome Modal Logic
+const welcomeModalEl = document.getElementById('welcomeModal');
+const welcomeModal   = new bootstrap.Modal(welcomeModalEl, {
+  backdrop: 'static', keyboard: false
+});
+let welcomeTimer;
 
-// 1. Element references
-const form               = document.getElementById('match-form');
-const payerInput         = document.getElementById('payer');
-const amountInput        = document.getElementById('amount');
-const playersInput       = document.getElementById('players');
-const tabsList           = document.getElementById('match-tabs');
-const contentsDiv        = document.getElementById('match-contents');
+// Show on load, auto-hide after 20s
+window.addEventListener('load', () => {
+  welcomeModal.show();
+  welcomeTimer = setTimeout(() => welcomeModal.hide(), 20000);
+});
 
-const clubBtn            = document.getElementById('club-expenses-btn');
-const clubModalEl        = document.getElementById('clubExpensesModal');
-const clubModal          = new bootstrap.Modal(clubModalEl);
-const matchCheckboxes    = document.getElementById('match-checkboxes');
-const applyClubBtn       = document.getElementById('apply-club-expenses');
-const resetClubBtn       = document.getElementById('reset-club-expenses');
-const clubSummaryTbody   = document.querySelector('#club-summary-table tbody');
+// Understood button clears timer and hides modal
+document.getElementById('understood-btn')
+  .addEventListener('click', () => {
+    clearTimeout(welcomeTimer);
+    welcomeModal.hide();
+  });
 
-// 2. In-memory matches (ephemeral)
-let matches = [];
 
-// 3. Initial render
+// 2. Element references for main app
+const form             = document.getElementById('match-form');
+const payerInput       = document.getElementById('payer');
+const amountInput      = document.getElementById('amount');
+const playersInput     = document.getElementById('players');
+const tabsList         = document.getElementById('match-tabs');
+const contentsDiv      = document.getElementById('match-contents');
+
+const clubBtn          = document.getElementById('club-expenses-btn');
+const clubModalEl      = document.getElementById('clubExpensesModal');
+const clubModal        = new bootstrap.Modal(clubModalEl);
+const matchCheckboxes  = document.getElementById('match-checkboxes');
+const applyClubBtn     = document.getElementById('apply-club-expenses');
+const resetClubBtn     = document.getElementById('reset-club-expenses');
+const clubSummaryTbody = document.querySelector('#club-summary-table tbody');
+
+let matches = [];  // in-memory only
+
+// Initial render
 renderAll();
 
-// 4. Add Match Handler
+// Add match
 form.addEventListener('submit', e => {
   e.preventDefault();
-
   const payer   = payerInput.value.trim();
   const amount  = parseFloat(amountInput.value);
   const players = playersInput.value
-    .split(',')
-    .map(s => s.trim())
-    .filter(s => s);
+    .split(',').map(s => s.trim()).filter(s => s);
 
-  if (!payer || isNaN(amount) || players.length === 0) return;
+  if (!payer || isNaN(amount) || !players.length) return;
 
   matches.push({ payer, amount, players });
   payerInput.value = '';
   amountInput.value = '';
   playersInput.value = '';
-
   renderAll();
 });
 
-// 5. Compute balances for a given set of matches
+// Compute balances
 function computeBalances(subMatches) {
   const balMap = {};
-
   subMatches.forEach(m => {
     const participants = [...m.players];
-    if (!participants.includes(m.payer)) {
-      participants.push(m.payer);
-    }
-
+    if (!participants.includes(m.payer)) participants.push(m.payer);
     const share = m.amount / participants.length;
     participants.forEach(p => {
       balMap[p] = (balMap[p] || 0) - share;
     });
-
     balMap[m.payer] += m.amount;
   });
-
   return balMap;
 }
 
-// 6. Render tabs, panes, delete controls, and button states
+// Render tabs + panes + delete
 function renderAll() {
-  tabsList.innerHTML    = '';
+  tabsList.innerHTML = '';
   contentsDiv.innerHTML = '';
-
-  // Disable Club Expenses if no matches
   clubBtn.disabled = matches.length < 2;
 
   matches.forEach((m, i) => {
-    const isActive = i === 0 ? 'active' : '';
-    const paneId   = `match-${i}`;
+    const active = i === 0 ? 'active' : '';
+    const paneId = `match-${i}`;
 
-    // Tab with inline delete “×”
+    // Tab w/ delete “×”
     tabsList.insertAdjacentHTML('beforeend', `
-      <li class="nav-item" role="presentation">
+      <li class="nav-item">
         <button
-          class="nav-link ${isActive} d-flex align-items-center"
+          class="nav-link ${active} d-flex align-items-center"
           id="${paneId}-tab"
           data-bs-toggle="tab"
           data-bs-target="#${paneId}"
           type="button"
-          role="tab"
         >
-          <span>Match ${i + 1}</span>
+          <span>Match ${i+1}</span>
           <button
             type="button"
             class="btn-close ms-2 delete-match"
@@ -98,33 +103,22 @@ function renderAll() {
       </li>
     `);
 
-    // Pane content with delete button
+    // Pane content
     const balances = computeBalances([m]);
     const rows = Object.entries(balances)
-      .sort((a, b) => b[1] - a[1])
-      .map(([player, bal]) => `
-        <tr>
-          <td>${player}</td>
-          <td>₹${bal.toFixed(2)}</td>
-        </tr>
+      .sort((a,b)=>b[1]-a[1])
+      .map(([p,b]) => `
+        <tr><td>${p}</td><td>₹${b.toFixed(2)}</td></tr>
       `).join('');
 
     contentsDiv.insertAdjacentHTML('beforeend', `
-      <div
-        class="tab-pane fade ${isActive ? 'show active' : ''}"
-        id="${paneId}"
-        role="tabpanel"
-      >
+      <div class="tab-pane fade ${active?'show active':''}" id="${paneId}">
         <div class="d-flex justify-content-between align-items-center mb-2">
-          <div>
-            <strong>${m.payer}</strong> paid ₹${m.amount.toFixed(2)}
-            &nbsp;|&nbsp; Players: ${m.players.join(', ')}
+          <div><strong>${m.payer}</strong> paid ₹${m.amount.toFixed(2)}
+            | Players: ${m.players.join(', ')}
           </div>
-          <button
-            type="button"
-            class="btn btn-sm btn-danger delete-match"
-            data-index="${i}"
-          >
+          <button type="button" class="btn btn-sm btn-danger delete-match"
+            data-index="${i}">
             Delete Match
           </button>
         </div>
@@ -136,103 +130,86 @@ function renderAll() {
     `);
   });
 
-  // Attach delete-match listeners
+  // Wire up deletes
   document.querySelectorAll('.delete-match').forEach(btn => {
     btn.addEventListener('click', e => {
-      e.stopPropagation(); // prevent tab switch
-      const idx = parseInt(btn.dataset.index, 10);
-      if (!isNaN(idx) && confirm(`Remove Match ${idx + 1}?`)) {
-        matches.splice(idx, 1);
+      e.stopPropagation();
+      const idx = +btn.dataset.index;
+      if (confirm(`Remove Match ${idx+1}?`)) {
+        matches.splice(idx,1);
         renderAll();
       }
     });
   });
 }
 
-// 7. Club Expenses Modal: populate checkboxes on open
+// Club modal: show match list
 clubBtn.addEventListener('click', () => {
   matchCheckboxes.innerHTML = '';
   clubSummaryTbody.innerHTML = '';
-
-  matches.forEach((m, i) => {
+  matches.forEach((m,i) => {
     matchCheckboxes.insertAdjacentHTML('beforeend', `
       <div class="form-check">
-        <input
-          class="form-check-input"
-          type="checkbox"
-          value="${i}"
-          id="chk-${i}"
-        >
+        <input class="form-check-input" type="checkbox" id="chk-${i}" value="${i}">
         <label class="form-check-label" for="chk-${i}">
-          Match ${i + 1}: ${m.payer} paid ₹${m.amount.toFixed(2)}
+          Match ${i+1}: ${m.payer} paid ₹${m.amount.toFixed(2)}
         </label>
       </div>
     `);
   });
-
   clubModal.show();
 });
 
-// 8. Reset Club Modal: clear all selections & summary
+// Reset club modal
 resetClubBtn.addEventListener('click', () => {
-  matchCheckboxes
-    .querySelectorAll('input[type=checkbox]')
-    .forEach(cb => { cb.checked = false; });
+  matchCheckboxes.querySelectorAll('input').forEach(cb => cb.checked=false);
   clubSummaryTbody.innerHTML = '';
 });
 
-// 9. Apply Club Expenses: summary with live Remaining updates
+// Apply club modal
 applyClubBtn.addEventListener('click', () => {
-  const selectedIdx = Array.from(
-    matchCheckboxes.querySelectorAll(
-      'input[type=checkbox]:checked'
-    )
-  ).map(cb => parseInt(cb.value, 10));
-
-  const selectedMatches = selectedIdx.map(i => matches[i]);
-  const combined = computeBalances(selectedMatches);
+  const idxs = Array.from(
+    matchCheckboxes.querySelectorAll('input:checked')
+  ).map(cb=>+cb.value);
+  const combined = computeBalances(idxs.map(i=>matches[i]));
 
   clubSummaryTbody.innerHTML = '';
   Object.entries(combined)
-    // sort by descending absolute amount
-    .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
-    .forEach(([player, netBal]) => {
-      const owedAbs       = Math.abs(netBal);
-      const isCreditor    = netBal > 0;
-      const paidDefault   = isCreditor ? owedAbs : 0;
-      const inputDisabled = isCreditor;
-      const remainingInit = isCreditor ? 0 : owedAbs;
+    .sort((a,b)=>Math.abs(b[1])-Math.abs(a[1]))
+    .forEach(([player,net]) => {
+      const owed = Math.abs(net);
+      const isCred = net>0;
+      const paid0 = isCred?owed:0;
+      const rem0  = isCred?0:owed;
 
       clubSummaryTbody.insertAdjacentHTML('beforeend', `
-        <tr data-owed="${owedAbs.toFixed(2)}">
+        <tr data-owed="${owed}">
           <td>${player}</td>
-          <td class="owed-cell">₹${owedAbs.toFixed(2)}</td>
+          <td>₹${owed.toFixed(2)}</td>
           <td>
             <input
               type="number"
               class="form-control paid-input"
-              value="${paidDefault.toFixed(2)}"
-              ${inputDisabled ? 'disabled' : ''}
-              min="0"
-              step="0.01"
-              style="width: 100px;"
+              value="${paid0.toFixed(2)}"
+              ${isCred?'disabled':''}
+              min="0" step="0.01"
+              style="width:100px"
             >
           </td>
-          <td class="remaining-cell">₹${remainingInit.toFixed(2)}</td>
+          <td class="remaining-cell">₹${rem0.toFixed(2)}</td>
         </tr>
       `);
     });
 
-  // Live‐update Remaining = owed − paid
-  clubSummaryTbody
-    .querySelectorAll('.paid-input:not([disabled])')
-    .forEach(input => {
-      input.addEventListener('input', () => {
-        const tr   = input.closest('tr');
-        const owed = parseFloat(tr.dataset.owed);
-        const paid = parseFloat(input.value) || 0;
-        const rem  = (owed - paid).toFixed(2);
-        tr.querySelector('.remaining-cell').textContent = `₹${rem}`;
+  // live update
+  clubSummaryTbody.querySelectorAll('.paid-input:not([disabled])')
+    .forEach(input=>{
+      input.addEventListener('input', ()=> {
+        const tr = input.closest('tr');
+        const owed = +tr.dataset.owed;
+        const paid = +input.value||0;
+        tr.querySelector('.remaining-cell')
+          .textContent = `₹${(owed-paid).toFixed(2)}`;
       });
     });
 });
